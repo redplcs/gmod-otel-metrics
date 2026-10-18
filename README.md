@@ -15,6 +15,7 @@ Server metrics for Garry's Mod over OpenTelemetry. Tick rate, frame times, playe
 - **Server-side only.** Nothing is sent to clients: no `AddCSLuaFile`, no net messages, no network strings.
 - **Stays out of the game's way.** Its hooks never return a value, and an error inside a collector is counted and logged instead of breaking the hook.
 - **Modular.** Collectors can be switched off one by one, and other addons can add their own metrics.
+- **Ready-made Grafana dashboards and alert rules** in [`grafana`](grafana).
 
 ## Requirements
 
@@ -53,7 +54,7 @@ Server metrics for Garry's Mod over OpenTelemetry. Tick rate, frame times, playe
    [OTel Metrics] Exporting to http://127.0.0.1:4318/v1/metrics every 15 s.
    ```
 
-Within half a minute `otel_metrics_status` in the server console should report `result ok`, and `gmod_server_ticks_total` shows up in Prometheus or Grafana.
+Within half a minute `otel_metrics_status` in the server console should report `result ok`, and `gmod_server_ticks_total` shows up in Prometheus or Grafana. To look at the metrics, import the [Grafana dashboards](#grafana-dashboards).
 
 ## Receivers
 
@@ -112,6 +113,40 @@ otel_metrics_endpoint "http://127.0.0.1:9090/api/v1/otlp/v1/metrics"
 Alloy, the OpenTelemetry Collector and Prometheus convert names the same way by default: dots become underscores, the unit is appended, and counters get `_total`. So `gmod.server.ticks` becomes `gmod_server_ticks_total`, and the histogram `gmod.server.frame.duration` becomes `gmod_server_frame_duration_seconds_bucket`, `_sum` and `_count`. Attribute names change the same way: `player.kind` becomes `player_kind`.
 
 The resource attribute `service.name` (`otel_metrics_service_name`, `gmod` by default) becomes the `job` label, and `service.instance.id` (`otel_metrics_instance_id`) becomes `instance`. Other resource attributes go to the `target_info` metric.
+
+## Grafana dashboards
+
+The [`grafana/dashboards`](grafana/dashboards) folder has six dashboards built on this addon's metrics alone:
+
+| Dashboard | What it shows |
+|---|---|
+| Fleet overview<br>`gmod-fleet.json` | Every server at a glance: which ones report, addon versions, players, Lua errors, a table of servers and the slowest ones. |
+| Overview<br>`gmod-overview.json` | One server: performance, players, Lua and the exporter, each linking to its details. |
+| Performance<br>`gmod-performance.json` | Simulation speed, ticks per second, game time lost, frame times, physics and entities. |
+| Players<br>`gmod-players.json` | Players online, joins and disconnects, time to join, sessions, player-hours, ping and packet loss. |
+| Lua<br>`gmod-lua.json` | Lua errors by addon and realm, and Lua memory. |
+| Exporter<br>`gmod-exporter.json` | The addon itself: delivery, export results, payload size, encoding time and collectors. |
+
+To import them, open **Dashboards → New → Import** in Grafana and upload each file. To update them later, import the new files and choose **Overwrite**: the UIDs stay the same.
+
+Every dashboard has the same variables at the top: **Data source**, **Job** and **Server** (the `job` and `instance` labels), and **Export interval**, which should match `otel_metrics_interval`. The links at the top switch between the dashboards and keep the time range; in the fleet overview, a click on a server opens its overview.
+
+Tested with Grafana Cloud. The hourly and daily bars use a negative `offset`, which needs Prometheus 2.33 or later.
+
+### Alerts
+
+[`grafana/alerts.yml`](grafana/alerts.yml) has four alert rules in the Prometheus rule file format:
+
+| Alert | Fires when |
+|---|---|
+| `GmodNoData` | No metrics have arrived for 5 minutes. |
+| `GmodSimulationSlow` | The server has simulated less than 90% of its tick rate for 5 minutes. |
+| `GmodFreeze` | The game stood still for more than 5 seconds within 5 minutes. |
+| `GmodEdictsNearLimit` | Over 90% of edicts are in use. |
+
+In Grafana, open **Alerting → Alert rules**, choose **Import to Grafana-managed rules** and pick **Prometheus YAML file** as the source. In Prometheus, add the file to `rule_files`. `GmodNoData` is labeled `severity: critical`, the others `warning`.
+
+Set `sv_hibernate_think 1`: otherwise an empty server stops sending metrics, and `GmodNoData` fires until someone joins.
 
 ## Settings
 

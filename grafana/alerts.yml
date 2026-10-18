@@ -1,0 +1,73 @@
+# Alert rules for OTel Metrics (gmod-otel-metrics), in Prometheus rule file format.
+#
+# Grafana: Alerting > Alert rules > Import to Grafana-managed rules,
+#          import source "Prometheus YAML file".
+# Prometheus: add this file to rule_files.
+
+groups:
+  - name: gmod-otel-metrics
+    interval: 1m
+    rules:
+      - alert: GmodNoData
+        expr: |
+          max by (job, instance) (max_over_time(gmod_collector_enabled[1d]))
+            unless
+          max by (job, instance) (max_over_time(gmod_collector_enabled[5m]))
+        labels:
+          severity: critical
+        annotations:
+          summary: "{{ $labels.instance }}: no metrics for 5 minutes"
+          description: >-
+            The server stopped sending metrics: it is down, it hibernates with
+            sv_hibernate_think 0, or the export fails (see otel_metrics_status).
+            The alert clears when data comes back, or a day after the last data.
+
+      # Simulated time divided by the time the server ran (the sum of its frame
+      # durations), not by wall-clock time: otherwise the minutes after a start
+      # and before a gap in the data read as a slowdown.
+      - alert: GmodSimulationSlow
+        expr: |
+          sum by (job, instance) (rate(gmod_server_ticks_total[5m]))
+            * on (job, instance)
+          max by (job, instance) (gmod_server_tick_interval_seconds)
+            / on (job, instance)
+          sum by (job, instance) (rate(gmod_server_frame_duration_seconds_sum[5m]))
+            < 0.9
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "{{ $labels.instance }}: simulating less than 90% of the tick rate"
+          description: >-
+            For 5 minutes the server has simulated fewer than 90% of its
+            configured ticks: the CPU can't keep up.
+
+      - alert: GmodFreeze
+        expr: |
+          sum by (job, instance) (increase(gmod_server_simulation_lag_seconds_total[5m]))
+            > 5
+        labels:
+          severity: warning
+        annotations:
+          summary: "{{ $labels.instance }}: the game stood still for over 5 seconds"
+          description: >-
+            Within 5 minutes the simulation fell behind by more than 5 seconds
+            and never caught up: players saw the game freeze. Up to addon
+            0.1.1, with sv_hibernate_think 0 an empty server that a player
+            joins within a few minutes counts its pause as a freeze too; set
+            sv_hibernate_think 1 to avoid that.
+
+      - alert: GmodEdictsNearLimit
+        expr: |
+          max by (job, instance) (gmod_edict_count)
+            / on (job, instance)
+          max by (job, instance) (gmod_edict_limit)
+            > 0.9
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "{{ $labels.instance }}: over 90% of edicts in use"
+          description: >-
+            Close to the edict limit ents.Create starts failing, so new props,
+            NPCs and effects stop spawning.
