@@ -28,6 +28,7 @@ local state = {
 	lastPayload = nil,
 	results = {},          -- result -> count
 	rejectedPoints = 0,
+	announced = false,     -- settings reported since the last start
 }
 Exporter.state = state
 
@@ -92,6 +93,7 @@ local function onTimer()
 end
 
 function Exporter.Start()
+	state.announced = false
 	createSelfMetrics()
 	timer.Create(TIMER, Exporter.GetInterval(), 0, onTimer)
 	M.Config:OnChange("interval", "exporter", function()
@@ -198,6 +200,14 @@ function Exporter.Export(reason)
 	if not string.match(string.lower(endpoint), "^https?://") then
 		M.WarnOnce("bad-endpoint", 600, "otel_metrics_endpoint must start with http:// or https:// (now '%s').", endpoint)
 		return false, "invalid endpoint"
+	end
+
+	if not state.announced and reason ~= "shutdown" then
+		-- Reported here rather than at startup, so this shows the settings
+		-- that are actually in effect.
+		state.announced = true
+		M.Log("Exporting to %s every %g s.", endpoint, Exporter.GetInterval())
+		M.CheckEnvironment()
 	end
 
 	local ok, body, points, encodeTime = pcall(Exporter.BuildPayload)

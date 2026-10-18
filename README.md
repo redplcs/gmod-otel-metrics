@@ -35,7 +35,7 @@ Server metrics for Garry's Mod over OpenTelemetry. Tick rate, frame times, playe
 
 2. If the receiver runs on the same machine, add `-allowlocalhttp` to the srcds command line.
 
-3. Add to `server.cfg`:
+3. Set these console variables in the server config, so they survive a restart:
 
    ```
    sv_hibernate_think 1
@@ -46,10 +46,11 @@ Server metrics for Garry's Mod over OpenTelemetry. Tick rate, frame times, playe
 
 4. Set up a [receiver](#receivers).
 
-5. Restart the server fully; a map change is not enough. The console should show:
+5. Restart the server fully; a map change is not enough. The first line appears at startup, the second with the first export about 15 seconds later:
 
    ```
-   [OTel Metrics] v0.1.0 loaded. Exporting to http://127.0.0.1:4318/v1/metrics every 15 s.
+   [OTel Metrics] v0.1.1 loaded.
+   [OTel Metrics] Exporting to http://127.0.0.1:4318/v1/metrics every 15 s.
    ```
 
 Within half a minute `otel_metrics_status` in the server console should report `result ok`, and `gmod_server_ticks_total` shows up in Prometheus or Grafana.
@@ -124,10 +125,10 @@ The resource attribute `service.name` (`otel_metrics_service_name`, `gmod` by de
 | `otel_metrics_instance_id` | | `service.instance.id`: the `instance` label. Empty: the server's IP and port. |
 | `otel_metrics_resource_attributes` | | Extra resource attributes as `key=value,key2=value2`. |
 | `otel_metrics_max_series` | `200` | Series limit per metric. Further attribute combinations are merged into one series labeled `otel_metric_overflow="true"`. |
-| `otel_metrics_frame_buckets` | | Bounds of the frame time histogram in seconds, comma-separated. Empty: `0.035, 0.05, 0.075, 0.1, 0.15, 0.25, 0.5, 1, 2.5, 5`, made for 33 tick. Read when the `server` collector starts: to apply a new value, run `otel_metrics_collector_server 0`, then `1`. |
+| `otel_metrics_frame_buckets` | | Bounds of the frame time histogram in seconds, comma-separated. Empty: `0.035, 0.05, 0.075, 0.1, 0.15, 0.25, 0.5, 1, 2.5, 5`, made for 33 tick. A change starts the histogram over. |
 | `otel_metrics_collector_<name>` | `1` | Turns a collector on or off: `server`, `physics`, `lua`, `players`, `connections`, `entities`, `info`. |
 
-Put them in `server.cfg`, or change them from the console or RCON. They take effect without a restart.
+Set them in the server config, from the console or over RCON. They take effect without a restart.
 
 ## Commands
 
@@ -140,7 +141,7 @@ These work only from the server console and RCON.
 | `otel_metrics_dump` | Writes the last payload to `data/otel_metrics/last_payload.json`, to see exactly what is sent. |
 
 ```
-[OTel Metrics] v0.1.0, running
+[OTel Metrics] v0.1.1, running
   endpoint: http://127.0.0.1:4318/v1/metrics, every 15 s
   headers: none
   last export: 2026-10-18 12:00:15 (4 s ago), result ok, HTTP 200
@@ -253,6 +254,7 @@ Always exported while the addon runs.
 - Counters and histograms are cumulative: every request carries the totals since the map started. A lost request loses no data, so nothing is queued or sent twice.
 - After a failed request the addon waits twice the interval, twice as long again after each further failure, up to 5 minutes, and at least as long as `Retry-After` asks. After HTTP 401, 403 or 404 it waits 5 minutes, since those need a configuration fix.
 - The first export goes out after the map has loaded.
+- Settings are read when they are used, so values set after the addon has started apply too. The endpoint, the interval and `sv_hibernate_think` are reported at the first export for the same reason.
 - Most values are read once per export. Frame times are measured every frame, physics every tick.
 - Each collector is isolated. Its hooks never return a value, so they can't change game behavior, and errors inside it are counted in `gmod_collector_errors_total` and logged at most once a minute. A collector that fails 10 times within 60 seconds is switched off.
 - Without `sv_hibernate_think 1` an empty server stops `Think`, `Tick` and timers, so nothing is sent until someone joins. That gap is not counted as lag.

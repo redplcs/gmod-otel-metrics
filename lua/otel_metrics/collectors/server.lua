@@ -6,13 +6,15 @@ local M = OTelMetrics
 local DEFAULT_FRAME_BOUNDS = { 0.035, 0.05, 0.075, 0.1, 0.15, 0.25, 0.5, 1, 2.5, 5 }
 
 M.Config:Define("frame_buckets", "",
-	"Frame duration histogram bounds in seconds, comma-separated. Empty: defaults for 33 tick. Applied when the collector starts.")
+	"Frame duration histogram bounds in seconds, comma-separated. Empty: defaults for 33 tick. A change starts the histogram over.")
+
+local BUCKETS_CALLBACK = "collector.server.frame_buckets"
 
 local function parseBounds(s)
 	local out = {}
 	for _, item in ipairs(M.Split(s or "", ",")) do
 		local v = tonumber(M.Trim(item))
-		if v and v > 0 then out[#out + 1] = v end
+		if v and v > 0 and M.IsFinite(v) then out[#out + 1] = v end
 	end
 	table.sort(out)
 	local unique = {}
@@ -21,6 +23,16 @@ local function parseBounds(s)
 	end
 	if #unique == 0 then return nil end
 	return unique
+end
+
+--- Creates the histogram, or gives the existing one new bounds (which starts
+--- it over).
+local function frameHistogram(meter, bounds)
+	return meter:CreateHistogram("gmod.server.frame.duration", {
+		unit = "s",
+		description = "Real time between server frames (Think).",
+		boundaries = bounds,
+	})
 end
 
 local C = {
@@ -32,12 +44,20 @@ local C = {
 function C:Start(ctx)
 	local meter = ctx.Meter
 	local bounds = parseBounds(ctx.Config:GetString("frame_buckets")) or DEFAULT_FRAME_BOUNDS
+	self.frames = frameHistogram(meter, bounds):Bind()
 
-	self.frames = meter:CreateHistogram("gmod.server.frame.duration", {
-		unit = "s",
-		description = "Real time between server frames (Think).",
-		boundaries = bounds,
-	}):Bind()
+	-- The value can change after the collector has started: apply new bounds
+	-- whenever it changes. Binding again exports the new histogram right away,
+	-- before the next frame.
+	M.Config:OnChange("frame_buckets", BUCKETS_CALLBACK, function(value)
+		local ok, histogram = pcall(frameHistogram, meter, parseBounds(value) or DEFAULT_FRAME_BOUNDS)
+		if ok then
+			self.frames = histogram:Bind()
+		else
+			M.Collectors.ReportError(C.Name, histogram)
+		end
+	end)
+
 	self.tickBase = engine.TickCount()
 	self.lastThink = 0
 	self.idle = false
@@ -76,6 +96,10 @@ function C:Start(ctx)
 	end, { unit = "s", description = "Real time the simulation fell behind and never caught up." })
 
 	ctx:AddHook("Think", function() self:OnThink() end)
+end
+
+function C:Stop()
+	M.Config:RemoveOnChange("frame_buckets", BUCKETS_CALLBACK)
 end
 
 function C:OnThink()

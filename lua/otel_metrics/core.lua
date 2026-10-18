@@ -2,7 +2,7 @@
 
 local M = OTelMetrics
 
-M.Version = "0.1.0"
+M.Version = "0.1.1"
 M.ScopeName = "otel_metrics"
 
 local SysTime = SysTime
@@ -155,8 +155,8 @@ function M.IsPrivateHost(host)
 end
 
 ----------------------------------------------------------------------------
--- Configuration (ConVars). Values are read on every use: server.cfg and
--- other configs may run after the addon has started.
+-- Configuration (ConVars). Values are read on every use: they may be set
+-- after the addon has started.
 
 local Config = {}
 M.Config = Config
@@ -232,8 +232,9 @@ function M.Start()
 	M.Running = true
 	M.Collectors.StartAll()
 	M.Exporter.Start()
-	M.Log("v%s loaded. Exporting to %s every %g s.", M.Version, Config:GetString("endpoint"), M.Exporter.GetInterval())
-	M.CheckEnvironment()
+	-- Settings may be set after GM:Initialize, so the endpoint, the interval
+	-- and sv_hibernate_think are reported at the first export, not here.
+	M.Log("v%s loaded.", M.Version)
 end
 
 function M.Stop()
