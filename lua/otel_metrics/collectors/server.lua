@@ -1,0 +1,109 @@
+-- Server performance: ticks, frame times, lost simulation time.
+
+local M = OTelMetrics
+
+-- The first bound is a normal frame at 33 tick (30.3 ms) plus some jitter.
+local DEFAULT_FRAME_BOUNDS = { 0.035, 0.05, 0.075, 0.1, 0.15, 0.25, 0.5, 1, 2.5, 5 }
+
+M.Config:Define("frame_buckets", "",
+	"Frame duration histogram bounds in seconds, comma-separated. Empty: defaults for 33 tick. Applied when the collector starts.")
+
+local function parseBounds(s)
+	local out = {}
+	for _, item in ipairs(M.Split(s or "", ",")) do
+		local v = tonumber(M.Trim(item))
+		if v and v > 0 then out[#out + 1] = v end
+	end
+	table.sort(out)
+	local unique = {}
+	for i = 1, #out do
+		if out[i] ~= unique[#unique] then unique[#unique + 1] = out[i] end
+	end
+	if #unique == 0 then return nil end
+	return unique
+end
+
+local C = {
+	Name = "server",
+	Description = "Tick rate, frame times and simulation lag.",
+	DefaultEnabled = true,
+}
+
+function C:Start(ctx)
+	local meter = ctx.Meter
+	local bounds = parseBounds(ctx.Config:GetString("frame_buckets")) or DEFAULT_FRAME_BOUNDS
+
+	self.frames = meter:CreateHistogram("gmod.server.frame.duration", {
+		unit = "s",
+		description = "Real time between server frames (Think).",
+		boundaries = bounds,
+	}):Bind()
+	self.tickBase = engine.TickCount()
+	self.lastThink = 0
+	self.idle = false
+	self.frameMax = 0
+	self.framesSeen = false
+	self.lagStartReal = nil
+	self.lagStartTick = nil
+	self.excluded = 0
+	self.lagMax = 0
+	self.hibernate = GetConVar("sv_hibernate_think")
+
+	meter:CreateObservableCounter("gmod.server.ticks", function(o)
+		o:Observe(engine.TickCount() - self.tickBase)
+	end, { unit = "{tick}", description = "Server ticks simulated since the collector started." })
+
+	meter:CreateObservableGauge("gmod.server.tick.interval", function(o)
+		o:Observe(engine.TickInterval())
+	end, { unit = "s", description = "Configured tick interval (1 / tickrate)." })
+
+	meter:CreateObservableGauge("gmod.server.frame.duration.max", function(o)
+		if self.framesSeen then o:Observe(self.frameMax) end
+		self.frameMax, self.framesSeen = 0, false
+	end, { unit = "s", description = "Longest server frame since the previous export." })
+
+	-- Real time minus simulated time. When a frame takes too long the engine
+	-- does not catch up on all of it, so the difference keeps the time the
+	-- game stood still. Up to one tick is ordinary jitter and is subtracted.
+	meter:CreateObservableCounter("gmod.server.simulation.lag", function(o)
+		if not self.lagStartReal then return end
+		local interval = engine.TickInterval()
+		local real = SysTime() - self.lagStartReal - self.excluded
+		local simulated = (engine.TickCount() - self.lagStartTick) * interval
+		local lag = real - simulated - interval
+		if lag > self.lagMax then self.lagMax = lag end
+		o:Observe(self.lagMax)
+	end, { unit = "s", description = "Real time the simulation fell behind and never caught up." })
+
+	ctx:AddHook("Think", function() self:OnThink() end)
+end
+
+function C:OnThink()
+	local now = SysTime()
+	local last = self.lastThink
+	self.lastThink = now
+
+	-- Without sv_hibernate_think an empty server stops thinking. The gap before
+	-- the next frame is hibernation, not lag.
+	local wasIdle = self.idle
+	local hibernate = self.hibernate
+	self.idle = (hibernate == nil or not hibernate:GetBool()) and player.GetCount() == 0
+
+	if last == 0 then
+		self.lagStartReal = now
+		self.lagStartTick = engine.TickCount()
+		return
+	end
+
+	local dt = now - last
+	if wasIdle and dt > 1 then
+		self.excluded = self.excluded + dt
+		return
+	end
+
+	self.frames:Record(dt)
+	if dt > self.frameMax then self.frameMax = dt end
+	self.framesSeen = true
+end
+
+M.Collectors.Register(C)

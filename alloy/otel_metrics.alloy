@@ -1,0 +1,35 @@
+// OTel Metrics (gmod-otel-metrics): OTLP/HTTP from srcds -> Prometheus remote_write.
+//
+// Append to /etc/alloy/config.alloy, then: systemctl reload alloy
+// Uses the existing prometheus.remote_write "metrics_service".
+//
+// Resulting labels: service.name -> job, service.instance.id -> instance,
+// other resource attributes -> target_info.
+
+otelcol.receiver.otlp "gmod" {
+  // HTTP only, loopback only: srcds runs on the same host.
+  http {
+    endpoint = "127.0.0.1:4318"
+  }
+
+  output {
+    metrics = [otelcol.processor.batch.gmod.input]
+  }
+}
+
+otelcol.processor.batch "gmod" {
+  output {
+    metrics = [otelcol.exporter.prometheus.gmod.input]
+  }
+}
+
+otelcol.exporter.prometheus "gmod" {
+  forward_to = [prometheus.remote_write.metrics_service.receiver]
+}
+
+// Debugging: uncomment, then add otelcol.exporter.debug.gmod.input to
+// metrics = [...] in the receiver output to see incoming points in the Alloy log.
+//
+// otelcol.exporter.debug "gmod" {
+//   verbosity = "detailed"
+// }
