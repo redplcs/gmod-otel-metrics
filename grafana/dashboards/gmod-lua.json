@@ -202,7 +202,8 @@
           "legendFormat": "server",
           "range": false,
           "instant": true,
-          "refId": "A"
+          "refId": "A",
+          "interval": "$export_interval"
         },
         {
           "datasource": {
@@ -214,10 +215,11 @@
           "legendFormat": "client",
           "range": false,
           "instant": true,
-          "refId": "B"
+          "refId": "B",
+          "interval": "$export_interval"
         }
       ],
-      "description": "Errors per minute, averaged over a few minutes: a single error shows as a low bump that lasts a few minutes and then goes back to zero. Lua errors on the server and errors that clients report to it. The text of each error is in the server console. Errors raised with Error or ErrorNoHalt are not counted, and GMod limits how many client errors reach the server.",
+      "description": "Errors per minute, averaged over a minute: a single error shows as a short bump that goes back to zero a minute later. Lua errors on the server and errors that clients report to it. The text of each error is in the server console. Errors raised with Error or ErrorNoHalt are not counted, and GMod limits how many client errors reach the server.",
       "interval": "$export_interval",
       "fieldConfig": {
         "defaults": {
@@ -289,10 +291,11 @@
           "legendFormat": "{{addon}}",
           "range": true,
           "instant": false,
-          "refId": "A"
+          "refId": "A",
+          "interval": "$export_interval"
         }
       ],
-      "description": "By addon: the addon title GMod reports, otherwise the addon folder from the error path (gamemode:<name> for gamemodes, base for GMod's own lua/includes), otherwise unknown, for example lua_run or files in garrysmod/lua. Errors per minute, averaged over a few minutes: a single error shows as a low bump that lasts a few minutes and then goes back to zero. Lua errors on the server and errors that clients report to it. The text of each error is in the server console. Errors raised with Error or ErrorNoHalt are not counted, and GMod limits how many client errors reach the server.",
+      "description": "By addon: the addon title GMod reports, otherwise the addon folder from the error path (gamemode:<name> for gamemodes, base for GMod's own lua/includes), otherwise unknown, for example lua_run or files in garrysmod/lua. Errors per minute, averaged over a minute: a single error shows as a short bump that goes back to zero a minute later. Lua errors on the server and errors that clients report to it. The text of each error is in the server console. Errors raised with Error or ErrorNoHalt are not counted, and GMod limits how many client errors reach the server.",
       "interval": "$export_interval",
       "fieldConfig": {
         "defaults": {
@@ -371,7 +374,8 @@
           "range": false,
           "instant": true,
           "refId": "A",
-          "format": "table"
+          "format": "table",
+          "interval": "$export_interval"
         }
       ],
       "description": "Errors over the selected time range by addon and realm, most first.",
@@ -492,7 +496,8 @@
           "legendFormat": "{{realm}}",
           "range": true,
           "instant": false,
-          "refId": "A"
+          "refId": "A",
+          "interval": "$export_interval"
         }
       ],
       "description": "server: errors in the server Lua state. client: errors clients report to the server. A steady stream of client errors usually comes from one broken addon on everyone's machine.",
@@ -586,7 +591,8 @@
           "legendFormat": "__auto",
           "range": false,
           "instant": true,
-          "refId": "A"
+          "refId": "A",
+          "interval": "$export_interval"
         }
       ],
       "description": "Memory used by the server Lua state. A sawtooth is normal: memory grows until the garbage collector frees it. A rising lower edge over hours suggests an addon keeps references it doesn't need (a leak).",
@@ -653,7 +659,8 @@
           "legendFormat": "memory",
           "range": true,
           "instant": false,
-          "refId": "A"
+          "refId": "A",
+          "interval": "$export_interval"
         },
         {
           "datasource": {
@@ -665,7 +672,8 @@
           "legendFormat": "10-minute minimum",
           "range": true,
           "instant": false,
-          "refId": "B"
+          "refId": "B",
+          "interval": "$export_interval"
         }
       ],
       "description": "Memory used by the server Lua state. A sawtooth is normal: memory grows until the garbage collector frees it. A rising lower edge over hours suggests an addon keeps references it doesn't need (a leak). The dashed line is the lowest value over the previous 10 minutes: it shows that lower edge.",

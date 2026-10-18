@@ -202,7 +202,8 @@
           "legendFormat": "{{map}} ({{gamemode}})",
           "range": false,
           "instant": true,
-          "refId": "A"
+          "refId": "A",
+          "interval": "$export_interval"
         }
       ],
       "description": "Current map and gamemode.",
@@ -269,7 +270,8 @@
           "legendFormat": "__auto",
           "range": false,
           "instant": true,
-          "refId": "A"
+          "refId": "A",
+          "interval": "$export_interval"
         }
       ],
       "description": "Time since the current map started.",
@@ -336,7 +338,8 @@
           "legendFormat": "__auto",
           "range": false,
           "instant": true,
-          "refId": "A"
+          "refId": "A",
+          "interval": "$export_interval"
         }
       ],
       "description": "Configured tick rate (-tickrate). GMod defaults to 66. Physics and game logic run every tick, so 66 tick costs about twice the CPU of 33.",
@@ -404,7 +407,8 @@
           "legendFormat": "__auto",
           "range": false,
           "instant": true,
-          "refId": "A"
+          "refId": "A",
+          "interval": "$export_interval"
         }
       ],
       "description": "maxplayers.",
@@ -472,7 +476,8 @@
           "legendFormat": "{{gmod_version}} · {{gmod_branch}} · {{arch}}",
           "range": false,
           "instant": true,
-          "refId": "A"
+          "refId": "A",
+          "interval": "$export_interval"
         }
       ],
       "description": "GMod version, branch and architecture.",
@@ -539,7 +544,8 @@
           "legendFormat": "{{telemetry_sdk_version}}",
           "range": false,
           "instant": true,
-          "refId": "A"
+          "refId": "A",
+          "interval": "$export_interval"
         }
       ],
       "description": "Addon version, from the target_info metric. After updating the addon, restart the server to load it.",
@@ -626,7 +632,8 @@
           "legendFormat": "__auto",
           "range": false,
           "instant": true,
-          "refId": "A"
+          "refId": "A",
+          "interval": "$export_interval"
         }
       ],
       "description": "Share of the configured tick rate that the server actually simulated.\n\n- **100%**: the server keeps up.\n- **Below 100%**: the game runs in slow motion for everyone: movement, physics and timers slow down.\n\nUsually caused by physics (many unfrozen props touching each other) or by a heavy addon. Compare with *Physics per tick*: above 100% there, physics is the cause.\n\nSimulated time is divided by the real time the server ran, so the minutes after a start and before a gap in the data don't read low.",
@@ -708,7 +715,8 @@
           "legendFormat": "speed",
           "range": true,
           "instant": false,
-          "refId": "A"
+          "refId": "A",
+          "interval": "$export_interval"
         },
         {
           "datasource": {
@@ -720,7 +728,8 @@
           "legendFormat": "full speed",
           "range": true,
           "instant": false,
-          "refId": "B"
+          "refId": "B",
+          "interval": "$export_interval"
         }
       ],
       "description": "Share of the configured tick rate that the server actually simulated.\n\n- **100%**: the server keeps up.\n- **Below 100%**: the game runs in slow motion for everyone: movement, physics and timers slow down.\n\nUsually caused by physics (many unfrozen props touching each other) or by a heavy addon. Compare with *Physics per tick*: above 100% there, physics is the cause.\n\nSimulated time is divided by the real time the server ran, so the minutes after a start and before a gap in the data don't read low.",
@@ -837,7 +846,8 @@
           "legendFormat": "__auto",
           "range": false,
           "instant": true,
-          "refId": "A"
+          "refId": "A",
+          "interval": "$export_interval"
         }
       ],
       "description": "Median physics step as a share of one tick.\n\n- **Below 50%**: physics leaves plenty of room for the rest of the game.\n- **Above 100%**: physics alone doesn't fit into a tick, so the server falls behind and the game slows down.\n\nPhysics cost grows with props that move or touch each other. Frozen and resting props cost almost nothing. Freeze or remove props, or lower the tick rate: physics runs every tick, so 66 tick costs twice as much as 33.",
@@ -919,7 +929,8 @@
           "legendFormat": "median",
           "range": true,
           "instant": false,
-          "refId": "A"
+          "refId": "A",
+          "interval": "$export_interval"
         },
         {
           "datasource": {
@@ -931,7 +942,8 @@
           "legendFormat": "tick",
           "range": true,
           "instant": false,
-          "refId": "B"
+          "refId": "B",
+          "interval": "$export_interval"
         }
       ],
       "description": "Duration of physics simulation steps, sampled every tick, against the length of one tick.\n\nWhen the median crosses the tick line the server can't keep up. Values under 1 ms are not precise: the first histogram bucket ends at 1 ms.",
@@ -1050,10 +1062,11 @@
           "legendFormat": "__auto",
           "range": false,
           "instant": true,
-          "refId": "A"
+          "refId": "A",
+          "interval": "$export_interval"
         }
       ],
-      "description": "Real time the simulation fell behind and never caught up: freezes and slow motion together.\n\nAt 50% simulation speed the server loses 30 seconds every minute. A single long frame (a freeze) shows up as a spike. The value is averaged over a few minutes, so a freeze is counted even though no data is exported while the server is frozen.",
+      "description": "Real time the simulation fell behind and never caught up: freezes and slow motion together.\n\nAt 50% simulation speed the server loses 30 seconds every minute. A single long frame (a freeze) shows up as a spike. The value is averaged over two minutes, so a freeze is counted even though no data is exported while the server is frozen.",
       "interval": "$export_interval",
       "links": [
         {
@@ -1132,10 +1145,11 @@
           "legendFormat": "lost",
           "range": true,
           "instant": false,
-          "refId": "A"
+          "refId": "A",
+          "interval": "30s"
         }
       ],
-      "description": "Real time the simulation fell behind and never caught up: freezes and slow motion together.\n\nAt 50% simulation speed the server loses 30 seconds every minute. A single long frame (a freeze) shows up as a spike. The value is averaged over a few minutes, so a freeze is counted even though no data is exported while the server is frozen.",
+      "description": "Real time the simulation fell behind and never caught up: freezes and slow motion together.\n\nAt 50% simulation speed the server loses 30 seconds every minute. A single long frame (a freeze) shows up as a spike. The value is averaged over two minutes, so a freeze is counted even though no data is exported while the server is frozen.",
       "interval": "30s",
       "links": [
         {
@@ -1218,7 +1232,8 @@
           "legendFormat": "__auto",
           "range": false,
           "instant": true,
-          "refId": "A"
+          "refId": "A",
+          "interval": "$export_interval"
         }
       ],
       "description": "Networked entities (edicts) against the engine limit of 8192.\n\nClose to the limit ents.Create starts failing, so new props, NPCs and effects stop spawning. Usually caused by prop spam or an addon that leaks entities.",
@@ -1300,7 +1315,8 @@
           "legendFormat": "entities",
           "range": true,
           "instant": false,
-          "refId": "A"
+          "refId": "A",
+          "interval": "$export_interval"
         },
         {
           "datasource": {
@@ -1312,7 +1328,8 @@
           "legendFormat": "edicts",
           "range": true,
           "instant": false,
-          "refId": "B"
+          "refId": "B",
+          "interval": "$export_interval"
         }
       ],
       "description": "- **Entities**: every entity on the server, including server-only ones.\n- **Edicts**: entities networked to clients; they count against the 8192 limit.\n\nProps drive the physics cost, so a jump here often explains a drop in simulation speed.",
@@ -1412,7 +1429,8 @@
           "legendFormat": "__auto",
           "range": false,
           "instant": true,
-          "refId": "A"
+          "refId": "A",
+          "interval": "$export_interval"
         }
       ],
       "description": "Human players on the server. Bots are counted separately on the Players dashboard.",
@@ -1487,7 +1505,8 @@
           "legendFormat": "{{player_kind}}",
           "range": true,
           "instant": false,
-          "refId": "A"
+          "refId": "A",
+          "interval": "$export_interval"
         },
         {
           "datasource": {
@@ -1499,7 +1518,8 @@
           "legendFormat": "slots",
           "range": true,
           "instant": false,
-          "refId": "B"
+          "refId": "B",
+          "interval": "$export_interval"
         }
       ],
       "description": "Humans and bots on the server, against the player slots (maxplayers).",
@@ -1616,7 +1636,8 @@
           "legendFormat": "joined",
           "range": false,
           "instant": true,
-          "refId": "A"
+          "refId": "A",
+          "interval": "$export_interval"
         },
         {
           "datasource": {
@@ -1628,7 +1649,8 @@
           "legendFormat": "left",
           "range": false,
           "instant": true,
-          "refId": "B"
+          "refId": "B",
+          "interval": "$export_interval"
         }
       ],
       "description": "Over the selected time range. Reasons are on the Players dashboard.",
@@ -1703,7 +1725,8 @@
           "legendFormat": "median",
           "range": true,
           "instant": false,
-          "refId": "A"
+          "refId": "A",
+          "interval": "$export_interval"
         },
         {
           "datasource": {
@@ -1715,7 +1738,8 @@
           "legendFormat": "95th percentile",
           "range": true,
           "instant": false,
-          "refId": "B"
+          "refId": "B",
+          "interval": "$export_interval"
         }
       ],
       "description": "Ping of human players, sampled once per export. Ping also grows when the server itself can't keep up, because it answers late.",
@@ -1814,10 +1838,11 @@
           "legendFormat": "__auto",
           "range": false,
           "instant": true,
-          "refId": "A"
+          "refId": "A",
+          "interval": "$export_interval"
         }
       ],
-      "description": "Errors per minute, averaged over a few minutes: a single error shows as a low bump that lasts a few minutes and then goes back to zero. Lua errors on the server and errors that clients report to it. The text of each error is in the server console. Errors raised with Error or ErrorNoHalt are not counted, and GMod limits how many client errors reach the server.",
+      "description": "Errors per minute, averaged over a minute: a single error shows as a short bump that goes back to zero a minute later. Lua errors on the server and errors that clients report to it. The text of each error is in the server console. Errors raised with Error or ErrorNoHalt are not counted, and GMod limits how many client errors reach the server.",
       "interval": "$export_interval",
       "links": [
         {
@@ -1896,10 +1921,11 @@
           "legendFormat": "{{addon}}",
           "range": true,
           "instant": false,
-          "refId": "A"
+          "refId": "A",
+          "interval": "$export_interval"
         }
       ],
-      "description": "Errors per minute, averaged over a few minutes: a single error shows as a low bump that lasts a few minutes and then goes back to zero. Lua errors on the server and errors that clients report to it. The text of each error is in the server console. Errors raised with Error or ErrorNoHalt are not counted, and GMod limits how many client errors reach the server.",
+      "description": "Errors per minute, averaged over a minute: a single error shows as a short bump that goes back to zero a minute later. Lua errors on the server and errors that clients report to it. The text of each error is in the server console. Errors raised with Error or ErrorNoHalt are not counted, and GMod limits how many client errors reach the server.",
       "interval": "$export_interval",
       "links": [
         {
@@ -1984,7 +2010,8 @@
           "legendFormat": "__auto",
           "range": false,
           "instant": true,
-          "refId": "A"
+          "refId": "A",
+          "interval": "$export_interval"
         }
       ],
       "description": "Memory used by the server Lua state. A sawtooth is normal: memory grows until the garbage collector frees it. A rising lower edge over hours suggests an addon keeps references it doesn't need (a leak).",
@@ -2058,7 +2085,8 @@
           "legendFormat": "Lua memory",
           "range": true,
           "instant": false,
-          "refId": "A"
+          "refId": "A",
+          "interval": "$export_interval"
         }
       ],
       "description": "Memory used by the server Lua state. A sawtooth is normal: memory grows until the garbage collector frees it. A rising lower edge over hours suggests an addon keeps references it doesn't need (a leak).",
@@ -2157,7 +2185,8 @@
           "legendFormat": "__auto",
           "range": false,
           "instant": true,
-          "refId": "A"
+          "refId": "A",
+          "interval": "$export_interval"
         }
       ],
       "description": "How long ago the last metrics arrived, looking back up to 24 hours. More than a minute or two means the server or the export is down.",
@@ -2240,10 +2269,11 @@
           "legendFormat": "received",
           "range": true,
           "instant": false,
-          "refId": "A"
+          "refId": "A",
+          "interval": "1m"
         }
       ],
-      "description": "Payloads that reached the metrics storage per minute. With otel_metrics_interval 15 this is 4. Fewer means exports failed, or the server was slow or frozen: the export timer runs on game time, so it slows down together with the game.",
+      "description": "Payloads that reached the metrics storage per minute. With otel_metrics_interval 15 this is 4. Fewer means exports failed, the server froze, or it hibernated while empty (sv_hibernate_think 0). Exports follow real time, so a server that is only slow still sends all of them.",
       "interval": "1m",
       "links": [
         {
@@ -2327,7 +2357,8 @@
           "legendFormat": "collector errors",
           "range": false,
           "instant": true,
-          "refId": "A"
+          "refId": "A",
+          "interval": "$export_interval"
         },
         {
           "datasource": {
@@ -2339,7 +2370,8 @@
           "legendFormat": "dropped series",
           "range": false,
           "instant": true,
-          "refId": "B"
+          "refId": "B",
+          "interval": "$export_interval"
         },
         {
           "datasource": {
@@ -2351,7 +2383,8 @@
           "legendFormat": "invalid points",
           "range": false,
           "instant": true,
-          "refId": "C"
+          "refId": "C",
+          "interval": "$export_interval"
         },
         {
           "datasource": {
@@ -2363,7 +2396,8 @@
           "legendFormat": "rejected points",
           "range": false,
           "instant": true,
-          "refId": "D"
+          "refId": "D",
+          "interval": "$export_interval"
         }
       ],
       "description": "Over the selected time range.\n\n- **Collector errors**: errors inside collectors; a collector that fails 10 times in 60 seconds is switched off.\n- **Dropped series**: attribute combinations over otel_metrics_max_series, merged into one overflow series.\n- **Invalid points**: measurements dropped as NaN, infinite or negative.\n- **Rejected points**: data points the receiver reported as rejected.",

@@ -2,7 +2,7 @@
 
 local M = OTelMetrics
 
-M.Version = "0.1.1"
+M.Version = "0.1.2"
 M.ScopeName = "otel_metrics"
 
 local SysTime = SysTime

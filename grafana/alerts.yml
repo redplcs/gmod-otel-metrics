@@ -52,10 +52,7 @@ groups:
           summary: "{{ $labels.instance }}: the game stood still for over 5 seconds"
           description: >-
             Within 5 minutes the simulation fell behind by more than 5 seconds
-            and never caught up: players saw the game freeze. Up to addon
-            0.1.1, with sv_hibernate_think 0 an empty server that a player
-            joins within a few minutes counts its pause as a freeze too; set
-            sv_hibernate_think 1 to avoid that.
+            and never caught up: players saw the game freeze.
 
       - alert: GmodEdictsNearLimit
         expr: |

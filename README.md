@@ -50,7 +50,7 @@ Server metrics for Garry's Mod over OpenTelemetry. Tick rate, frame times, playe
 5. Restart the server fully; a map change is not enough. The first line appears at startup, the second with the first export about 15 seconds later:
 
    ```
-   [OTel Metrics] v0.1.1 loaded.
+   [OTel Metrics] v0.1.2 loaded.
    [OTel Metrics] Exporting to http://127.0.0.1:4318/v1/metrics every 15 s.
    ```
 
@@ -160,7 +160,7 @@ Set `sv_hibernate_think 1`: otherwise an empty server stops sending metrics, and
 | `otel_metrics_instance_id` | | `service.instance.id`: the `instance` label. Empty: the server's IP and port. |
 | `otel_metrics_resource_attributes` | | Extra resource attributes as `key=value,key2=value2`. |
 | `otel_metrics_max_series` | `200` | Series limit per metric. Further attribute combinations are merged into one series labeled `otel_metric_overflow="true"`. |
-| `otel_metrics_frame_buckets` | | Bounds of the frame time histogram in seconds, comma-separated. Empty: `0.035, 0.05, 0.075, 0.1, 0.15, 0.25, 0.5, 1, 2.5, 5`, made for 33 tick. A change starts the histogram over. |
+| `otel_metrics_frame_buckets` | | Bounds of the frame time histogram in seconds, comma-separated. Empty: 1.155, 1.65, 2.475, 3.3, 4.95, 8.25 and 16.5 ticks, then 1, 2.5 and 5 seconds. At 33 tick that is `0.035, 0.05, 0.075, 0.1, 0.15, 0.25, 0.5, 1, 2.5, 5`, at 66 tick `0.0173, 0.0248, 0.0371, 0.0495, 0.0743, 0.124, 0.248, 1, 2.5, 5`. A change starts the histogram over. |
 | `otel_metrics_collector_<name>` | `1` | Turns a collector on or off: `server`, `physics`, `lua`, `players`, `connections`, `entities`, `info`. |
 
 Set them in the server config, from the console or over RCON. They take effect without a restart.
@@ -176,7 +176,7 @@ These work only from the server console and RCON.
 | `otel_metrics_dump` | Writes the last payload to `data/otel_metrics/last_payload.json`, to see exactly what is sent. |
 
 ```
-[OTel Metrics] v0.1.1, running
+[OTel Metrics] v0.1.2, running
   endpoint: http://127.0.0.1:4318/v1/metrics, every 15 s
   headers: none
   last export: 2026-10-18 12:00:15 (4 s ago), result ok, HTTP 200
@@ -191,7 +191,7 @@ A collector shows as `off` when it is switched off, `unsupported` when the serve
 
 ## Metrics
 
-Each metric is listed with its OTLP name and its name in Prometheus. Metrics with nothing to report yet appear after the first event: `gmod_lua_errors_total` after the first error, `gmod_player_disconnects_total` after the first disconnect. Counters start from zero on every map change; `rate()` and `increase()` handle that.
+Each metric is listed with its OTLP name and its name in Prometheus. Metrics with nothing to report yet appear after the first event: `gmod_lua_errors_total` after the first error, `gmod_player_disconnects_total` after the first disconnect. A new series is sent with a zero just before its first value, so `rate()` and `increase()` count the first event too. Counters start from zero on every map change; `rate()` and `increase()` handle that.
 
 ### Server performance (`server`)
 
@@ -285,14 +285,15 @@ Always exported while the addon runs.
 
 ## How it works
 
-- Every `otel_metrics_interval` seconds the addon collects all metrics and sends them in one `POST` with GMod's `HTTP()`. At most one request is in flight: if the previous one hasn't been answered yet, the export is skipped.
+- Every `otel_metrics_interval` seconds the addon collects all metrics and sends them in one `POST` with GMod's `HTTP()`. The interval is real time, checked every frame: GMod timers follow game time and would slow down together with an overloaded server. At most one request is in flight: if the previous one hasn't been answered yet, the export is skipped.
 - Counters and histograms are cumulative: every request carries the totals since the map started. A lost request loses no data, so nothing is queued or sent twice.
+- A series sent for the first time gets a zero point just after the previous collection, so the receiver sees it start from zero. The zero point is sent again only if the receiver answered 429 or 5xx: after a network error the request may have arrived, and a second zero would read as a counter reset.
 - After a failed request the addon waits twice the interval, twice as long again after each further failure, up to 5 minutes, and at least as long as `Retry-After` asks. After HTTP 401, 403 or 404 it waits 5 minutes, since those need a configuration fix.
 - The first export goes out after the map has loaded.
 - Settings are read when they are used, so values set after the addon has started apply too. The endpoint, the interval and `sv_hibernate_think` are reported at the first export for the same reason.
 - Most values are read once per export. Frame times are measured every frame, physics every tick.
 - Each collector is isolated. Its hooks never return a value, so they can't change game behavior, and errors inside it are counted in `gmod_collector_errors_total` and logged at most once a minute. A collector that fails 10 times within 60 seconds is switched off.
-- Without `sv_hibernate_think 1` an empty server stops `Think`, `Tick` and timers, so nothing is sent until someone joins. That gap is not counted as lag.
+- Without `sv_hibernate_think 1` an empty server stops `Think`, `Tick` and timers, so nothing is sent until someone joins. That gap is counted neither as a frame nor as lag.
 - The addon tries one last export when the server shuts down.
 
 ## Logs

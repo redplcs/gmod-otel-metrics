@@ -165,7 +165,8 @@
           "legendFormat": "__auto",
           "range": false,
           "instant": true,
-          "refId": "A"
+          "refId": "A",
+          "interval": "$export_interval"
         }
       ],
       "description": "Servers that sent metrics in the last 5 minutes.",
@@ -237,7 +238,8 @@
           "legendFormat": "__auto",
           "range": false,
           "instant": true,
-          "refId": "A"
+          "refId": "A",
+          "interval": "$export_interval"
         }
       ],
       "description": "How long ago the last metrics arrived, looking back up to 24 hours. More than a minute or two means the server or the export is down.",
@@ -313,7 +315,8 @@
           "legendFormat": "{{telemetry_sdk_version}}",
           "range": false,
           "instant": true,
-          "refId": "A"
+          "refId": "A",
+          "interval": "$export_interval"
         }
       ],
       "description": "Addon version, from the target_info metric. After updating the addon, restart the server to load it.",
@@ -380,7 +383,8 @@
           "legendFormat": "__auto",
           "range": false,
           "instant": true,
-          "refId": "A"
+          "refId": "A",
+          "interval": "$export_interval"
         }
       ],
       "description": "Human players on all selected servers.",
@@ -448,10 +452,11 @@
           "legendFormat": "__auto",
           "range": false,
           "instant": true,
-          "refId": "A"
+          "refId": "A",
+          "interval": "$export_interval"
         }
       ],
-      "description": "On all selected servers. Errors per minute, averaged over a few minutes: a single error shows as a low bump that lasts a few minutes and then goes back to zero. Lua errors on the server and errors that clients report to it. The text of each error is in the server console. Errors raised with Error or ErrorNoHalt are not counted, and GMod limits how many client errors reach the server.",
+      "description": "On all selected servers. Errors per minute, averaged over a minute: a single error shows as a short bump that goes back to zero a minute later. Lua errors on the server and errors that clients report to it. The text of each error is in the server console. Errors raised with Error or ErrorNoHalt are not counted, and GMod limits how many client errors reach the server.",
       "interval": "$export_interval",
       "fieldConfig": {
         "defaults": {
@@ -537,7 +542,8 @@
           "range": false,
           "instant": true,
           "refId": "A",
-          "format": "table"
+          "format": "table",
+          "interval": "$export_interval"
         },
         {
           "datasource": {
@@ -550,7 +556,8 @@
           "range": false,
           "instant": true,
           "refId": "B",
-          "format": "table"
+          "format": "table",
+          "interval": "$export_interval"
         },
         {
           "datasource": {
@@ -563,7 +570,8 @@
           "range": false,
           "instant": true,
           "refId": "C",
-          "format": "table"
+          "format": "table",
+          "interval": "$export_interval"
         },
         {
           "datasource": {
@@ -576,7 +584,8 @@
           "range": false,
           "instant": true,
           "refId": "D",
-          "format": "table"
+          "format": "table",
+          "interval": "$export_interval"
         },
         {
           "datasource": {
@@ -589,7 +598,8 @@
           "range": false,
           "instant": true,
           "refId": "E",
-          "format": "table"
+          "format": "table",
+          "interval": "$export_interval"
         },
         {
           "datasource": {
@@ -602,7 +612,8 @@
           "range": false,
           "instant": true,
           "refId": "F",
-          "format": "table"
+          "format": "table",
+          "interval": "$export_interval"
         },
         {
           "datasource": {
@@ -615,7 +626,8 @@
           "range": false,
           "instant": true,
           "refId": "G",
-          "format": "table"
+          "format": "table",
+          "interval": "$export_interval"
         },
         {
           "datasource": {
@@ -628,7 +640,8 @@
           "range": false,
           "instant": true,
           "refId": "H",
-          "format": "table"
+          "format": "table",
+          "interval": "$export_interval"
         },
         {
           "datasource": {
@@ -641,7 +654,8 @@
           "range": false,
           "instant": true,
           "refId": "I",
-          "format": "table"
+          "format": "table",
+          "interval": "$export_interval"
         }
       ],
       "description": "Every selected server at a glance, slowest first. Click a server to open its overview.",
@@ -999,7 +1013,8 @@
           "legendFormat": "{{instance}}",
           "range": true,
           "instant": false,
-          "refId": "A"
+          "refId": "A",
+          "interval": "$export_interval"
         }
       ],
       "description": "Share of the configured tick rate that the server actually simulated.\n\n- **100%**: the server keeps up.\n- **Below 100%**: the game runs in slow motion for everyone: movement, physics and timers slow down.\n\nUsually caused by physics (many unfrozen props touching each other) or by a heavy addon. Compare with *Physics per tick*: above 100% there, physics is the cause.\n\nSimulated time is divided by the real time the server ran, so the minutes after a start and before a gap in the data don't read low.",
@@ -1079,7 +1094,8 @@
           "legendFormat": "{{instance}}",
           "range": true,
           "instant": false,
-          "refId": "A"
+          "refId": "A",
+          "interval": "$export_interval"
         }
       ],
       "description": "Median physics step as a share of one tick.\n\n- **Below 50%**: physics leaves plenty of room for the rest of the game.\n- **Above 100%**: physics alone doesn't fit into a tick, so the server falls behind and the game slows down.\n\nPhysics cost grows with props that move or touch each other. Frozen and resting props cost almost nothing. Freeze or remove props, or lower the tick rate: physics runs every tick, so 66 tick costs twice as much as 33.",
@@ -1158,10 +1174,11 @@
           "legendFormat": "{{instance}}",
           "range": true,
           "instant": false,
-          "refId": "A"
+          "refId": "A",
+          "interval": "30s"
         }
       ],
-      "description": "Real time the simulation fell behind and never caught up: freezes and slow motion together.\n\nAt 50% simulation speed the server loses 30 seconds every minute. A single long frame (a freeze) shows up as a spike. The value is averaged over a few minutes, so a freeze is counted even though no data is exported while the server is frozen.",
+      "description": "Real time the simulation fell behind and never caught up: freezes and slow motion together.\n\nAt 50% simulation speed the server loses 30 seconds every minute. A single long frame (a freeze) shows up as a spike. The value is averaged over two minutes, so a freeze is counted even though no data is exported while the server is frozen.",
       "interval": "30s",
       "fieldConfig": {
         "defaults": {
@@ -1237,7 +1254,8 @@
           "legendFormat": "{{instance}}",
           "range": true,
           "instant": false,
-          "refId": "A"
+          "refId": "A",
+          "interval": "$export_interval"
         }
       ],
       "description": "Human players on the server. Bots are counted separately on the Players dashboard.",
@@ -1317,10 +1335,11 @@
           "legendFormat": "{{instance}}",
           "range": true,
           "instant": false,
-          "refId": "A"
+          "refId": "A",
+          "interval": "$export_interval"
         }
       ],
-      "description": "Errors per minute, averaged over a few minutes: a single error shows as a low bump that lasts a few minutes and then goes back to zero. Lua errors on the server and errors that clients report to it. The text of each error is in the server console. Errors raised with Error or ErrorNoHalt are not counted, and GMod limits how many client errors reach the server.",
+      "description": "Errors per minute, averaged over a minute: a single error shows as a short bump that goes back to zero a minute later. Lua errors on the server and errors that clients report to it. The text of each error is in the server console. Errors raised with Error or ErrorNoHalt are not counted, and GMod limits how many client errors reach the server.",
       "interval": "$export_interval",
       "fieldConfig": {
         "defaults": {
@@ -1398,7 +1417,8 @@
           "legendFormat": "{{instance}}",
           "range": true,
           "instant": false,
-          "refId": "A"
+          "refId": "A",
+          "interval": "$export_interval"
         }
       ],
       "description": "Networked entities (edicts) against the engine limit of 8192.\n\nClose to the limit ents.Create starts failing, so new props, NPCs and effects stop spawning. Usually caused by prop spam or an addon that leaks entities.",

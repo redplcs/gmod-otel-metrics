@@ -202,7 +202,8 @@
           "legendFormat": "__auto",
           "range": false,
           "instant": true,
-          "refId": "A"
+          "refId": "A",
+          "interval": "$export_interval"
         }
       ],
       "description": "Share of the configured tick rate that the server actually simulated.\n\n- **100%**: the server keeps up.\n- **Below 100%**: the game runs in slow motion for everyone: movement, physics and timers slow down.\n\nUsually caused by physics (many unfrozen props touching each other) or by a heavy addon. Compare with *Physics per tick*: above 100% there, physics is the cause.\n\nSimulated time is divided by the real time the server ran, so the minutes after a start and before a gap in the data don't read low.",
@@ -277,7 +278,8 @@
           "legendFormat": "speed",
           "range": true,
           "instant": false,
-          "refId": "A"
+          "refId": "A",
+          "interval": "$export_interval"
         },
         {
           "datasource": {
@@ -289,7 +291,8 @@
           "legendFormat": "full speed",
           "range": true,
           "instant": false,
-          "refId": "B"
+          "refId": "B",
+          "interval": "$export_interval"
         }
       ],
       "description": "Share of the configured tick rate that the server actually simulated.\n\n- **100%**: the server keeps up.\n- **Below 100%**: the game runs in slow motion for everyone: movement, physics and timers slow down.\n\nUsually caused by physics (many unfrozen props touching each other) or by a heavy addon. Compare with *Physics per tick*: above 100% there, physics is the cause.\n\nSimulated time is divided by the real time the server ran, so the minutes after a start and before a gap in the data don't read low.",
@@ -399,7 +402,8 @@
           "legendFormat": "simulated",
           "range": true,
           "instant": false,
-          "refId": "A"
+          "refId": "A",
+          "interval": "$export_interval"
         },
         {
           "datasource": {
@@ -411,7 +415,8 @@
           "legendFormat": "configured",
           "range": true,
           "instant": false,
-          "refId": "B"
+          "refId": "B",
+          "interval": "$export_interval"
         }
       ],
       "description": "Ticks the server actually simulated per second of running time, against the configured tick rate.",
@@ -521,10 +526,11 @@
           "legendFormat": "lost",
           "range": true,
           "instant": false,
-          "refId": "A"
+          "refId": "A",
+          "interval": "30s"
         }
       ],
-      "description": "Real time the simulation fell behind and never caught up: freezes and slow motion together.\n\nAt 50% simulation speed the server loses 30 seconds every minute. A single long frame (a freeze) shows up as a spike. The value is averaged over a few minutes, so a freeze is counted even though no data is exported while the server is frozen.",
+      "description": "Real time the simulation fell behind and never caught up: freezes and slow motion together.\n\nAt 50% simulation speed the server loses 30 seconds every minute. A single long frame (a freeze) shows up as a spike. The value is averaged over two minutes, so a freeze is counted even though no data is exported while the server is frozen.",
       "interval": "30s",
       "fieldConfig": {
         "defaults": {
@@ -613,7 +619,8 @@
           "legendFormat": "longest frame",
           "range": true,
           "instant": false,
-          "refId": "A"
+          "refId": "A",
+          "interval": "$export_interval"
         },
         {
           "datasource": {
@@ -625,7 +632,8 @@
           "legendFormat": "tick",
           "range": true,
           "instant": false,
-          "refId": "B"
+          "refId": "B",
+          "interval": "$export_interval"
         }
       ],
       "description": "The longest server frame between two exports, measured exactly, against the length of one tick. Spikes are hitches and freezes: a frame of several seconds means the game stood still for that long.",
@@ -738,10 +746,11 @@
           "range": true,
           "instant": false,
           "refId": "A",
-          "format": "heatmap"
+          "format": "heatmap",
+          "interval": "1m"
         }
       ],
-      "description": "Server frames per minute in each frame-time bucket. Each cell is a bucket; brighter means more frames.\n\nBuckets are set with otel_metrics_frame_buckets. The defaults are made for 33 tick, so at 66 tick all normal frames land in the first bucket and only slow frames stand out.",
+      "description": "Server frames per minute in each frame-time bucket. Each cell is a bucket; brighter means more frames.\n\nBy default the buckets follow the tick length: the first one, up to about 1.16 ticks, holds normal frames, the next ones slow frames, and the last ones freezes of 1 to 5 seconds and more. otel_metrics_frame_buckets sets them by hand.",
       "interval": "1m",
       "fieldConfig": {
         "defaults": {
@@ -833,7 +842,8 @@
           "legendFormat": "__auto",
           "range": false,
           "instant": true,
-          "refId": "A"
+          "refId": "A",
+          "interval": "$export_interval"
         }
       ],
       "description": "Median physics step as a share of one tick.\n\n- **Below 50%**: physics leaves plenty of room for the rest of the game.\n- **Above 100%**: physics alone doesn't fit into a tick, so the server falls behind and the game slows down.\n\nPhysics cost grows with props that move or touch each other. Frozen and resting props cost almost nothing. Freeze or remove props, or lower the tick rate: physics runs every tick, so 66 tick costs twice as much as 33.",
@@ -908,7 +918,8 @@
           "legendFormat": "median",
           "range": true,
           "instant": false,
-          "refId": "A"
+          "refId": "A",
+          "interval": "$export_interval"
         },
         {
           "datasource": {
@@ -920,7 +931,8 @@
           "legendFormat": "99th percentile",
           "range": true,
           "instant": false,
-          "refId": "B"
+          "refId": "B",
+          "interval": "$export_interval"
         },
         {
           "datasource": {
@@ -932,7 +944,8 @@
           "legendFormat": "tick",
           "range": true,
           "instant": false,
-          "refId": "C"
+          "refId": "C",
+          "interval": "$export_interval"
         }
       ],
       "description": "Duration of physics simulation steps, sampled every tick, against the length of one tick.\n\nWhen the median crosses the tick line the server can't keep up. Values under 1 ms are not precise: the first histogram bucket ends at 1 ms.",
@@ -1057,7 +1070,8 @@
           "legendFormat": "__auto",
           "range": false,
           "instant": true,
-          "refId": "A"
+          "refId": "A",
+          "interval": "$export_interval"
         }
       ],
       "description": "- **Entities**: every entity on the server, including server-only ones.\n- **Edicts**: entities networked to clients; they count against the 8192 limit.\n\nProps drive the physics cost, so a jump here often explains a drop in simulation speed.",
@@ -1125,7 +1139,8 @@
           "legendFormat": "entities",
           "range": true,
           "instant": false,
-          "refId": "A"
+          "refId": "A",
+          "interval": "$export_interval"
         },
         {
           "datasource": {
@@ -1137,7 +1152,8 @@
           "legendFormat": "edicts",
           "range": true,
           "instant": false,
-          "refId": "B"
+          "refId": "B",
+          "interval": "$export_interval"
         }
       ],
       "description": "- **Entities**: every entity on the server, including server-only ones.\n- **Edicts**: entities networked to clients; they count against the 8192 limit.\n\nProps drive the physics cost, so a jump here often explains a drop in simulation speed.",
@@ -1217,7 +1233,8 @@
           "legendFormat": "__auto",
           "range": false,
           "instant": true,
-          "refId": "A"
+          "refId": "A",
+          "interval": "$export_interval"
         }
       ],
       "description": "Networked entities (edicts) against the engine limit of 8192.\n\nClose to the limit ents.Create starts failing, so new props, NPCs and effects stop spawning. Usually caused by prop spam or an addon that leaks entities.",
@@ -1292,7 +1309,8 @@
           "legendFormat": "edicts in use",
           "range": true,
           "instant": false,
-          "refId": "A"
+          "refId": "A",
+          "interval": "$export_interval"
         }
       ],
       "description": "Networked entities (edicts) against the engine limit of 8192.\n\nClose to the limit ents.Create starts failing, so new props, NPCs and effects stop spawning. Usually caused by prop spam or an addon that leaks entities.",

@@ -202,7 +202,8 @@
           "legendFormat": "__auto",
           "range": false,
           "instant": true,
-          "refId": "A"
+          "refId": "A",
+          "interval": "$export_interval"
         }
       ],
       "description": "How long ago the last metrics arrived, looking back up to 24 hours. More than a minute or two means the server or the export is down.",
@@ -278,10 +279,11 @@
           "legendFormat": "__auto",
           "range": false,
           "instant": true,
-          "refId": "A"
+          "refId": "A",
+          "interval": "1m"
         }
       ],
-      "description": "Payloads that reached the metrics storage per minute. With otel_metrics_interval 15 this is 4. Fewer means exports failed, or the server was slow or frozen: the export timer runs on game time, so it slows down together with the game.",
+      "description": "Payloads that reached the metrics storage per minute. With otel_metrics_interval 15 this is 4. Fewer means exports failed, the server froze, or it hibernated while empty (sv_hibernate_think 0). Exports follow real time, so a server that is only slow still sends all of them.",
       "interval": "1m",
       "fieldConfig": {
         "defaults": {
@@ -346,7 +348,8 @@
           "legendFormat": "collector errors",
           "range": false,
           "instant": true,
-          "refId": "A"
+          "refId": "A",
+          "interval": "$export_interval"
         },
         {
           "datasource": {
@@ -358,7 +361,8 @@
           "legendFormat": "dropped series",
           "range": false,
           "instant": true,
-          "refId": "B"
+          "refId": "B",
+          "interval": "$export_interval"
         },
         {
           "datasource": {
@@ -370,7 +374,8 @@
           "legendFormat": "invalid points",
           "range": false,
           "instant": true,
-          "refId": "C"
+          "refId": "C",
+          "interval": "$export_interval"
         },
         {
           "datasource": {
@@ -382,7 +387,8 @@
           "legendFormat": "rejected points",
           "range": false,
           "instant": true,
-          "refId": "D"
+          "refId": "D",
+          "interval": "$export_interval"
         }
       ],
       "description": "Over the selected time range.\n\n- **Collector errors**: errors inside collectors; a collector that fails 10 times in 60 seconds is switched off.\n- **Dropped series**: attribute combinations over otel_metrics_max_series, merged into one overflow series.\n- **Invalid points**: measurements dropped as NaN, infinite or negative.\n- **Rejected points**: data points the receiver reported as rejected.",
@@ -453,10 +459,11 @@
           "legendFormat": "received",
           "range": true,
           "instant": false,
-          "refId": "A"
+          "refId": "A",
+          "interval": "1m"
         }
       ],
-      "description": "Payloads that reached the metrics storage per minute. With otel_metrics_interval 15 this is 4. Fewer means exports failed, or the server was slow or frozen: the export timer runs on game time, so it slows down together with the game.",
+      "description": "Payloads that reached the metrics storage per minute. With otel_metrics_interval 15 this is 4. Fewer means exports failed, the server froze, or it hibernated while empty (sv_hibernate_think 0). Exports follow real time, so a server that is only slow still sends all of them.",
       "interval": "1m",
       "fieldConfig": {
         "defaults": {
@@ -533,7 +540,8 @@
           "legendFormat": "{{result}}",
           "range": true,
           "instant": false,
-          "refId": "A"
+          "refId": "A",
+          "interval": "$export_interval"
         }
       ],
       "description": "Export attempts per minute by result.\n\n- **ok**: delivered.\n- **retryable**: the receiver answered 429 or 5xx; the addon retries later.\n- **rejected**: another HTTP error, usually a wrong path or missing authentication.\n- **network**: no response; check -allowlocalhttp and that the receiver runs.\n- **skipped**: the previous request was still in flight.\n- **error**: the payload could not be built.",
@@ -717,7 +725,8 @@
           "legendFormat": "size",
           "range": true,
           "instant": false,
-          "refId": "A"
+          "refId": "A",
+          "interval": "$export_interval"
         },
         {
           "datasource": {
@@ -729,7 +738,8 @@
           "legendFormat": "data points",
           "range": true,
           "instant": false,
-          "refId": "B"
+          "refId": "B",
+          "interval": "$export_interval"
         }
       ],
       "description": "Size of each payload and the number of data points in it. Both grow with players, attribute values and other addons' metrics.",
@@ -825,7 +835,8 @@
           "legendFormat": "encoding",
           "range": true,
           "instant": false,
-          "refId": "A"
+          "refId": "A",
+          "interval": "$export_interval"
         }
       ],
       "description": "Time spent turning the collected metrics into JSON, once per export, inside a server frame. Typically about a millisecond for a 10 KiB payload, with spikes of several milliseconds. It grows with the payload size.",
@@ -917,7 +928,8 @@
           "legendFormat": "{{collector}}",
           "range": true,
           "instant": false,
-          "refId": "A"
+          "refId": "A",
+          "interval": "$export_interval"
         }
       ],
       "description": "Which collectors are running. A collector is off when its otel_metrics_collector_<name> is 0, when the server lacks what it needs, or after repeated errors.",
@@ -1001,7 +1013,8 @@
           "legendFormat": "{{collector}}",
           "range": true,
           "instant": false,
-          "refId": "A"
+          "refId": "A",
+          "interval": "$export_interval"
         }
       ],
       "description": "Time each collector spent in one collection. Stacked: the top is the total, which runs inside a server frame. Spikes in collectors that do almost nothing are pauses of the Lua garbage collector or the OS, not the collectors' own work.",
@@ -1080,10 +1093,11 @@
           "legendFormat": "{{collector}}",
           "range": true,
           "instant": false,
-          "refId": "A"
+          "refId": "A",
+          "interval": "$export_interval"
         }
       ],
-      "description": "Errors inside collectors per minute, averaged over a few minutes. They are logged in the server console once a minute; a collector that fails 10 times in 60 seconds is switched off.",
+      "description": "Errors inside collectors per minute, averaged over a minute. They are logged in the server console once a minute; a collector that fails 10 times in 60 seconds is switched off.",
       "interval": "$export_interval",
       "fieldConfig": {
         "defaults": {

@@ -202,7 +202,8 @@
           "legendFormat": "__auto",
           "range": false,
           "instant": true,
-          "refId": "A"
+          "refId": "A",
+          "interval": "$export_interval"
         }
       ],
       "description": "Human players on the server. Bots are counted separately on the Players dashboard.",
@@ -270,7 +271,8 @@
           "legendFormat": "{{player_kind}}",
           "range": true,
           "instant": false,
-          "refId": "A"
+          "refId": "A",
+          "interval": "$export_interval"
         },
         {
           "datasource": {
@@ -282,7 +284,8 @@
           "legendFormat": "slots",
           "range": true,
           "instant": false,
-          "refId": "B"
+          "refId": "B",
+          "interval": "$export_interval"
         }
       ],
       "description": "Humans and bots on the server, against the player slots (maxplayers).",
@@ -405,7 +408,8 @@
           "legendFormat": "joined",
           "range": true,
           "instant": false,
-          "refId": "A"
+          "refId": "A",
+          "interval": "1h"
         },
         {
           "datasource": {
@@ -417,7 +421,8 @@
           "legendFormat": "left: {{disconnect_reason}}",
           "range": true,
           "instant": false,
-          "refId": "B"
+          "refId": "B",
+          "interval": "1h"
         }
       ],
       "description": "Joins per hour above the axis, disconnects by reason below it. The current hour fills in as it goes. Over the selected time range.\n\n- **client**: left on their own.\n- **timeout**: the connection dropped.\n- **kicked**, **banned**: removed by an admin or an addon.\n- **aborted**: left before they were fully in the game, often while downloading content.\n- **shutdown**: the server stopped or changed map.",
@@ -607,7 +612,8 @@
           "legendFormat": "average",
           "range": false,
           "instant": true,
-          "refId": "A"
+          "refId": "A",
+          "interval": "$export_interval"
         },
         {
           "datasource": {
@@ -619,7 +625,8 @@
           "legendFormat": "joins",
           "range": false,
           "instant": true,
-          "refId": "B"
+          "refId": "B",
+          "interval": "$export_interval"
         }
       ],
       "description": "Average time from connecting to being fully in the game, content download included, and the number of joins it is based on. Long joins usually mean large downloads; check the Workshop collection and FastDL.",
@@ -705,7 +712,8 @@
           "range": true,
           "instant": false,
           "refId": "A",
-          "format": "heatmap"
+          "format": "heatmap",
+          "interval": "10m"
         }
       ],
       "description": "Time to join per 10 minutes in each histogram bucket. Average time from connecting to being fully in the game, content download included, and the number of joins it is based on. Long joins usually mean large downloads; check the Workshop collection and FastDL.",
@@ -787,7 +795,8 @@
           "legendFormat": "average",
           "range": false,
           "instant": true,
-          "refId": "A"
+          "refId": "A",
+          "interval": "$export_interval"
         },
         {
           "datasource": {
@@ -799,7 +808,8 @@
           "legendFormat": "sessions",
           "range": false,
           "instant": true,
-          "refId": "B"
+          "refId": "B",
+          "interval": "$export_interval"
         }
       ],
       "description": "Average length of the sessions that ended during the selected time range, and their number.",
@@ -885,7 +895,8 @@
           "range": true,
           "instant": false,
           "refId": "A",
-          "format": "heatmap"
+          "format": "heatmap",
+          "interval": "10m"
         }
       ],
       "description": "Session length per 10 minutes in each histogram bucket. Average length of the sessions that ended during the selected time range, and their number.",
@@ -980,7 +991,8 @@
           "legendFormat": "__auto",
           "range": false,
           "instant": true,
-          "refId": "A"
+          "refId": "A",
+          "interval": "$export_interval"
         }
       ],
       "description": "Over the selected time range. Time all human players spent on the server, added up. Ten players for an hour make ten player-hours.",
@@ -1048,7 +1060,8 @@
           "legendFormat": "player-hours",
           "range": true,
           "instant": false,
-          "refId": "A"
+          "refId": "A",
+          "interval": "1d"
         }
       ],
       "description": "Last 14 days. Days start at midnight in the dashboard's time zone; today fills in as it goes. Time all human players spent on the server, added up. Ten players for an hour make ten player-hours.",
@@ -1129,7 +1142,8 @@
           "legendFormat": "peak",
           "range": true,
           "instant": false,
-          "refId": "A"
+          "refId": "A",
+          "interval": "1d"
         }
       ],
       "description": "Most human players online at the same time, per day. Last 14 days. Days start at midnight in the dashboard's time zone; today fills in as it goes.",
@@ -1223,7 +1237,8 @@
           "legendFormat": "median",
           "range": true,
           "instant": false,
-          "refId": "A"
+          "refId": "A",
+          "interval": "$export_interval"
         },
         {
           "datasource": {
@@ -1235,7 +1250,8 @@
           "legendFormat": "95th percentile",
           "range": true,
           "instant": false,
-          "refId": "B"
+          "refId": "B",
+          "interval": "$export_interval"
         }
       ],
       "description": "Ping of human players, sampled once per export. Ping also grows when the server itself can't keep up, because it answers late.",
@@ -1315,7 +1331,8 @@
           "range": true,
           "instant": false,
           "refId": "A",
-          "format": "heatmap"
+          "format": "heatmap",
+          "interval": "1m"
         }
       ],
       "description": "Ping samples per minute in each bucket, one sample per player per export. Ping of human players, sampled once per export. Ping also grows when the server itself can't keep up, because it answers late.",
@@ -1397,7 +1414,8 @@
           "legendFormat": "worst packet loss",
           "range": true,
           "instant": false,
-          "refId": "A"
+          "refId": "A",
+          "interval": "$export_interval"
         },
         {
           "datasource": {
@@ -1409,7 +1427,8 @@
           "legendFormat": "timing out",
           "range": true,
           "instant": false,
-          "refId": "B"
+          "refId": "B",
+          "interval": "$export_interval"
         }
       ],
       "description": "- **Worst packet loss**: the highest packet loss among players, from 0 to 100%.\n- **Timing out**: players the server hasn't heard from for more than 4 seconds.\n\nBoth point to network problems between players and the server rather than to the server itself.",

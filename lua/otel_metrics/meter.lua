@@ -10,6 +10,8 @@ local SysTime = SysTime
 local MAX_KEY_BYTES = 64
 local MAX_VALUE_BYTES = 128
 local DROPPED_TRACK_LIMIT = 10000
+local DELIVERED_TRACK_LIMIT = 10000
+local OVERFLOW_KEY = "\0overflow"
 
 M.Stats = { invalidPoints = 0 }
 
@@ -72,6 +74,7 @@ local function newInstrument(meta, meter, kind, name, opts)
 		maxSeries = tonumber(opts.maxSeries),
 		series = {}, list = {}, count = 0, overflow = nil,
 		dropped = 0, droppedKeys = {}, droppedKeyCount = 0,
+		delivered = {}, deliveredCount = 0, -- series keys the receiver has seen
 	}, meta)
 end
 
@@ -94,10 +97,14 @@ function Instrument:_Series(attributes)
 	if s then return s end
 	if self.count >= self:Limit() then
 		self:_Drop(key)
-		if not self.overflow then self.overflow = self:_NewSeries(OVERFLOW_ATTRS) end
+		if not self.overflow then
+			self.overflow = self:_NewSeries(OVERFLOW_ATTRS)
+			self.overflow.key = OVERFLOW_KEY
+		end
 		return self.overflow
 	end
 	s = self:_NewSeries(list)
+	s.key = key
 	self.series[key] = s
 	self.list[#self.list + 1] = s
 	self.count = self.count + 1
@@ -245,6 +252,8 @@ end
 function Histogram:_SetBounds(bounds)
 	self.bounds = bounds
 	self.series, self.list, self.count, self.overflow = {}, {}, 0, nil
+	-- The new series start from zero, so they get zero points again.
+	self.delivered, self.deliveredCount = {}, 0
 	self.gen = self.gen + 1
 end
 
@@ -446,9 +455,32 @@ function Meter:CreateObservableGauge(name, callback, opts)
 	return self:_CreateObservable("obs_gauge", name, callback, opts, nil)
 end
 
---- Calls observable callbacks and returns { scope... } plus the number of points.
+--- Finds the points of a sum or histogram the receiver has not seen yet and
+--- adds them to `fresh`. Those that already hold a value get p.zero: the
+--- encoder puts a zero point before them, so the series starts from zero and
+--- rate() and increase() count its first value too. Returns the number of
+--- zero points.
+local function markFresh(inst, data, fresh)
+	local delivered, zeros = inst.delivered, 0
+	local histogram = data.kind == "histogram"
+	for i = 1, #data.points do
+		local p = data.points[i]
+		local zero = false
+		local key = p.key or ""
+		if not delivered[key] and inst.deliveredCount < DELIVERED_TRACK_LIMIT then
+			fresh[#fresh + 1] = { delivered, key, inst }
+			if histogram then zero = p.count > 0 else zero = p.value ~= 0 end
+			if zero then zeros = zeros + 1 end
+		end
+		p.zero = zero
+	end
+	return zeros
+end
+
+--- Calls observable callbacks and returns { scope... }, the number of data
+--- points and the series sent for the first time (see MarkDelivered).
 function Registry.Collect()
-	local scopes, points = {}, 0
+	local scopes, points, fresh = {}, 0, {}
 	for _, meter in ipairs(Registry.list) do
 		local metrics = {}
 		for _, inst in ipairs(meter.list) do
@@ -457,13 +489,28 @@ function Registry.Collect()
 				data.name, data.unit, data.description = inst.name, inst.unit, inst.description
 				metrics[#metrics + 1] = data
 				points = points + #data.points
+				if data.kind ~= "gauge" then points = points + markFresh(inst, data, fresh) end
 			end
 		end
 		if #metrics > 0 then
 			scopes[#scopes + 1] = { name = meter.name, version = meter.version, metrics = metrics }
 		end
 	end
-	return scopes, points
+	return scopes, points, fresh
+end
+
+--- The receiver has seen these series (the list from Collect): no more zero
+--- points for them.
+function Registry.MarkDelivered(fresh)
+	if not fresh then return end
+	for i = 1, #fresh do
+		local delivered, key, inst = fresh[i][1], fresh[i][2], fresh[i][3]
+		if not delivered[key] then
+			delivered[key] = true
+			-- A histogram that got new buckets meanwhile has a new set.
+			if inst.delivered == delivered then inst.deliveredCount = inst.deliveredCount + 1 end
+		end
+	end
 end
 
 function Registry.DroppedSeries()

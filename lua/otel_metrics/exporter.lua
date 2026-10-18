@@ -10,13 +10,16 @@ local SysTime = SysTime
 local Exporter = {}
 M.Exporter = Exporter
 
-local TIMER = "otel_metrics.export"
+local HOOK = "otel_metrics.timer"
 local MAX_BACKOFF = 300
 local LONG_PAUSE = 300
+local ZERO_MAX_AGE = 600
 
 local state = {
 	seq = 0,
-	inFlight = nil,        -- { seq = n, started = SysTime() }
+	inFlight = nil,        -- { seq = n, started = SysTime(), fresh = series sent for the first time }
+	nextExportAt = 0,      -- SysTime() of the next scheduled export
+	lastCollect = nil,     -- Unix time of the previous collection
 	failures = 0,
 	nextAttempt = 0,
 	lastResult = nil,
@@ -88,21 +91,31 @@ end
 ----------------------------------------------------------------------------
 -- Lifecycle
 
-local function onTimer()
-	Exporter.Export("timer")
+-- Exports every interval of real time. GMod timers follow game time and slow
+-- down together with the game, so the deadline is checked on every frame.
+local function onThink()
+	local now = SysTime()
+	if now < state.nextExportAt then return end
+	local interval = Exporter.GetInterval()
+	state.nextExportAt = state.nextExportAt + interval
+	-- Late after a freeze or hibernation: one export now, then the usual pace.
+	if state.nextExportAt <= now then state.nextExportAt = now + interval end
+	local ok, err = pcall(Exporter.Export, "timer")
+	if not ok then M.WarnOnce("export-error", 60, "Export failed: %s", tostring(err)) end
 end
 
 function Exporter.Start()
 	state.announced = false
 	createSelfMetrics()
-	timer.Create(TIMER, Exporter.GetInterval(), 0, onTimer)
+	state.nextExportAt = SysTime() + Exporter.GetInterval()
+	hook.Add("Think", HOOK, onThink)
 	M.Config:OnChange("interval", "exporter", function()
-		if timer.Exists(TIMER) then timer.Create(TIMER, Exporter.GetInterval(), 0, onTimer) end
+		state.nextExportAt = SysTime() + Exporter.GetInterval()
 	end)
 end
 
 function Exporter.Stop()
-	timer.Remove(TIMER)
+	hook.Remove("Think", HOOK)
 	M.Config:RemoveOnChange("interval", "exporter")
 	state.inFlight = nil -- late responses are ignored
 end
@@ -127,30 +140,47 @@ function Exporter.Resource()
 	return (M.NormalizeAttributes(attrs))
 end
 
---- Collects all instruments and encodes them. Returns body, points, encode time.
+--- Time of the zero points before series sent for the first time: just after
+--- the previous collection (or at the start), so they never coincide with a
+--- sample already sent, and at least 1 ms before now, since Prometheus keeps
+--- milliseconds. Receivers like Mimir refuse samples much older than the
+--- newest ones, hence the 10-minute cap.
+function Exporter.ZeroTime(now)
+	local t = state.lastCollect and state.lastCollect + 0.001 or M.StartTime or now
+	if t < now - ZERO_MAX_AGE then t = now - ZERO_MAX_AGE end
+	if t > now - 0.001 then t = now - 0.001 end
+	return t
+end
+
+--- Collects all instruments and encodes them. Returns body, points, encode
+--- time and the series sent for the first time (see Registry.MarkDelivered).
 function Exporter.BuildPayload()
 	M.Collectors.BeginCollect()
-	local ok, scopes, points = pcall(M.Registry.Collect)
+	local ok, scopes, points, fresh = pcall(M.Registry.Collect)
 	M.Collectors.EndCollect()
 	if not ok then error(scopes, 0) end
+	local now = M.UnixNow()
 	local started = SysTime()
 	local body = M.OtlpJson.EncodeMetrics({
 		resource = Exporter.Resource(),
 		startTime = M.StartTime,
-		time = M.UnixNow(),
+		time = now,
+		zeroTime = Exporter.ZeroTime(now),
 		scopes = scopes,
 	})
-	return body, points, SysTime() - started
+	state.lastCollect = now
+	return body, points, SysTime() - started, fresh
 end
 
 ----------------------------------------------------------------------------
 -- Delivery
 
+--- Returns the request in flight if seq is it, and clears it.
 local function finish(seq)
 	local flight = state.inFlight
-	if not flight or flight.seq ~= seq then return false end
+	if not flight or flight.seq ~= seq then return nil end
 	state.inFlight = nil
-	return true
+	return flight
 end
 
 local function backoff(minDelay)
@@ -173,6 +203,7 @@ local function header(headers, name)
 	for k, v in pairs(headers) do
 		if type(k) == "string" and string.lower(k) == name then return v end
 	end
+	return nil -- an explicit value: tonumber() without an argument is an error
 end
 
 --- reason: "timer", "manual" or "shutdown". Manual and shutdown exports
@@ -210,7 +241,7 @@ function Exporter.Export(reason)
 		M.CheckEnvironment()
 	end
 
-	local ok, body, points, encodeTime = pcall(Exporter.BuildPayload)
+	local ok, body, points, encodeTime, fresh = pcall(Exporter.BuildPayload)
 	if not ok then
 		count("error")
 		M.WarnOnce("build-failed", 60, "Failed to build the payload: %s", tostring(body))
@@ -220,7 +251,7 @@ function Exporter.Export(reason)
 
 	state.seq = state.seq + 1
 	local seq = state.seq
-	state.inFlight = { seq = seq, started = now }
+	state.inFlight = { seq = seq, started = now, fresh = fresh }
 
 	local queued = HTTP({
 		url = endpoint,
@@ -236,7 +267,7 @@ function Exporter.Export(reason)
 		end,
 	})
 	if not queued then
-		Exporter.OnNetworkFailure(seq, "the request was not queued (is HTTP disabled?)")
+		Exporter.OnNetworkFailure(seq, "the request was not queued (is HTTP disabled?)", true)
 		return false, "the request was not queued"
 	end
 	return true, "queued"
@@ -255,7 +286,8 @@ end
 -- GMod reports HTTP 4xx and 5xx through the success callback, so the
 -- decision is made by status code.
 function Exporter.OnResponse(seq, code, body, headers)
-	if not finish(seq) then return end
+	local flight = finish(seq)
+	if not flight then return end
 	code = tonumber(code) or 0
 	state.lastCode = code
 	state.lastExport = M.UnixNow()
@@ -264,17 +296,22 @@ function Exporter.OnResponse(seq, code, body, headers)
 		count("ok")
 		state.failures = 0
 		state.nextAttempt = 0
+		M.Registry.MarkDelivered(flight.fresh)
 		Exporter.CheckPartialSuccess(body)
 		return
 	end
 
 	if code == 429 or code >= 500 then
+		-- Not accepted: the next payload carries the zero points again.
 		count("retryable")
 		local delay = backoff(tonumber(header(headers, "Retry-After")))
 		M.WarnOnce("http-retry-" .. code, 300, "The receiver answered HTTP %d; next attempt in %d s.", code, delay)
 		return
 	end
 
+	-- Not accepted either, but the zero points are not sent again: they may be
+	-- what the receiver refuses.
+	M.Registry.MarkDelivered(flight.fresh)
 	count("rejected")
 	if code == 401 or code == 403 then
 		state.nextAttempt = SysTime() + LONG_PAUSE
@@ -289,8 +326,14 @@ function Exporter.OnResponse(seq, code, body, headers)
 	end
 end
 
-function Exporter.OnNetworkFailure(seq, failure)
-	if not finish(seq) then return end
+--- notSent: the request never left the server.
+function Exporter.OnNetworkFailure(seq, failure, notSent)
+	local flight = finish(seq)
+	if not flight then return end
+	-- Without an answer the payload may still have arrived. Sending its zero
+	-- points again would then put a zero after the first value, which reads as
+	-- a counter reset and counts the value twice.
+	if not notSent then M.Registry.MarkDelivered(flight.fresh) end
 	state.lastCode = nil
 	state.lastExport = M.UnixNow()
 	count("network")

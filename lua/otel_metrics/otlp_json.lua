@@ -70,7 +70,10 @@ local function invalid()
 	M.Stats.invalidPoints = M.Stats.invalidPoints + 1
 end
 
---- batch = { resource = attrs, startTime = unix, time = unix, scopes = { { name, version, metrics } } }
+--- batch = { resource = attrs, startTime = unix, time = unix, zeroTime = unix,
+---          scopes = { { name, version, metrics } } }
+--- A sum or histogram point with p.zero is preceded by the same point with
+--- value zero at zeroTime.
 function Json.EncodeMetrics(batch)
 	local buf, n = {}, 0
 	local function put(s)
@@ -79,8 +82,11 @@ function Json.EncodeMetrics(batch)
 	end
 
 	local now = M.FormatUnixNano(batch.time)
-	local withStart = '"startTimeUnixNano":"' .. M.FormatUnixNano(batch.startTime) .. '","timeUnixNano":"' .. now .. '"'
+	local start = M.FormatUnixNano(batch.startTime)
+	local withStart = '"startTimeUnixNano":"' .. start .. '","timeUnixNano":"' .. now .. '"'
 	local timeOnly = '"timeUnixNano":"' .. now .. '"'
+	local atZero = batch.zeroTime
+		and '"startTimeUnixNano":"' .. start .. '","timeUnixNano":"' .. M.FormatUnixNano(batch.zeroTime) .. '"'
 
 	local function openPoint(p, times)
 		put("{")
@@ -123,12 +129,20 @@ function Json.EncodeMetrics(batch)
 
 			local points, first = m.points, true
 			if m.kind == "histogram" then
-				local bounds = {}
+				local bounds, zeros = {}, {}
 				for i = 1, #m.bounds do bounds[i] = number(m.bounds[i]) end
+				for i = 1, #m.bounds + 1 do zeros[i] = '"0"' end
 				local boundsJson = ',"explicitBounds":[' .. table_concat(bounds, ",") .. "]}"
+				local zeroCounts = ',"count":"0","sum":0,"bucketCounts":[' .. table_concat(zeros, ",") .. "]"
 				put(',"histogram":{"aggregationTemporality":2,"dataPoints":[')
 				for pi = 1, #points do
 					local p = points[pi]
+					if atZero and p.zero then
+						if first then first = false else put(",") end
+						openPoint(p, atZero)
+						put(zeroCounts)
+						put(boundsJson)
+					end
 					if first then first = false else put(",") end
 					openPoint(p, withStart)
 					put(',"count":"' .. string_format("%.0f", p.count) .. '"')
@@ -140,15 +154,21 @@ function Json.EncodeMetrics(batch)
 				end
 				put("]}}")
 			else
-				if m.kind == "sum" then
+				local isSum = m.kind == "sum"
+				if isSum then
 					put(',"sum":{"aggregationTemporality":2,"isMonotonic":' .. (m.monotonic and "true" or "false") .. ',"dataPoints":[')
 				else
 					put(',"gauge":{"dataPoints":[')
 				end
-				local times = m.kind == "sum" and withStart or timeOnly
+				local times = isSum and withStart or timeOnly
 				for pi = 1, #points do
 					local p = points[pi]
 					if IsFinite(p.value) then
+						if isSum and atZero and p.zero then
+							if first then first = false else put(",") end
+							openPoint(p, atZero)
+							put(',"asDouble":0}')
+						end
 						if first then first = false else put(",") end
 						openPoint(p, times)
 						put(',"asDouble":' .. number(p.value) .. "}")
