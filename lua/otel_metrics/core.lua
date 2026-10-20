@@ -2,7 +2,7 @@
 
 local M = OTelMetrics
 
-M.Version = "0.1.2"
+M.Version = "0.1.3"
 M.ScopeName = "otel_metrics"
 
 local SysTime = SysTime
@@ -223,8 +223,18 @@ Config:Define("max_series", "200",
 
 M.Running = false
 
+--- The addon measures dedicated servers only. Players who subscribe to it in
+--- the Workshop also load it in single player and on listen servers.
+function M.IsDedicated()
+	return not (game and game.IsDedicated) or game.IsDedicated()
+end
+
 function M.Start()
 	if M.Running then return end
+	if not M.IsDedicated() then
+		M.Log("v%s loaded. Off: not a dedicated server.", M.Version)
+		return
+	end
 	if not Config:GetBool("enabled") then
 		M.Log("v%s loaded. Export is OFF (otel_metrics_enabled 0).", M.Version)
 		return

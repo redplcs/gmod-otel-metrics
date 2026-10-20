@@ -17,7 +17,8 @@ end
 concommand.Add("otel_metrics_status", function(ply)
 	if not fromConsole(ply) then return end
 	local s = M.GetStatus()
-	out("[OTel Metrics] v%s, %s", M.Version, M.Running and "running" or "stopped")
+	out("[OTel Metrics] v%s, %s", M.Version,
+		M.Running and "running" or (M.IsDedicated() and "stopped" or "off: not a dedicated server"))
 	out("  endpoint: %s, every %g s", s.Endpoint, M.Exporter.GetInterval())
 	local _, headerCount = M.ParseHeaders(M.Config:GetString("headers"))
 	out("  headers: %s", headerCount > 0 and ("set (" .. headerCount .. ")") or "none")

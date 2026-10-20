@@ -1,0 +1,13 @@
+{
+	"title": "OTel Metrics",
+	"type": "ServerContent",
+	"tags": [],
+	"description": "Server metrics for Garry's Mod over OpenTelemetry. For dedicated servers.",
+	"ignore": [
+		"README.md",
+		"LICENSE",
+		"alloy/*",
+		"grafana/*",
+		"workshop/*"
+	]
+}

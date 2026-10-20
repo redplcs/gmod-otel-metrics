@@ -1,5 +1,7 @@
 # OTel Metrics
 
+<img src="workshop/icon.jpg" alt="OTel Metrics icon" width="128" align="right">
+
 Server metrics for Garry's Mod over OpenTelemetry. Tick rate, frame times, players, connections, Lua errors and more, pushed every 15 seconds over OTLP/HTTP to Grafana Alloy, the OpenTelemetry Collector or Prometheus.
 
 ## Features
@@ -19,20 +21,20 @@ Server metrics for Garry's Mod over OpenTelemetry. Tick rate, frame times, playe
 
 ## Requirements
 
-- A dedicated server.
+- A dedicated server. In single player and on a listen server the addon stays off.
 - An OTLP/HTTP receiver that accepts JSON: [Grafana Alloy](https://grafana.com/docs/alloy/latest/), the [OpenTelemetry Collector](https://opentelemetry.io/docs/collector/) or Prometheus 3.
 - `-allowlocalhttp` on the srcds command line if the receiver runs on the same machine or in a private network. Without it GMod refuses HTTP requests to `localhost`, `127.0.0.1`, `10.x.x.x`, `192.168.x.x` and other local addresses.
 - `sv_hibernate_think 1` is recommended. Without it an empty server stops `Think`, `Tick` and timers, so no metrics are sent until someone joins.
 
 ## Installation
 
-1. Download this repository (**Code → Download ZIP**) and extract it into `garrysmod/addons/`, or clone it there:
+1. Add [OTel Metrics from the Steam Workshop](https://steamcommunity.com/sharedfiles/filedetails/?id=3823660148) to the collection your server mounts with `host_workshop_collection`. Or download this repository (**Code → Download ZIP**) and extract it into `garrysmod/addons/`, or clone it there:
 
    ```sh
    git clone https://github.com/redplcs/gmod-otel-metrics garrysmod/addons/gmod-otel-metrics
    ```
 
-   The game only uses the `lua` folder.
+   The game only uses the `lua` folder, and only that folder is in the Workshop. The Alloy fragment and the Grafana dashboards are here.
 
 2. If the receiver runs on the same machine, add `-allowlocalhttp` to the srcds command line.
 
@@ -50,7 +52,7 @@ Server metrics for Garry's Mod over OpenTelemetry. Tick rate, frame times, playe
 5. Restart the server fully; a map change is not enough. The first line appears at startup, the second with the first export about 15 seconds later:
 
    ```
-   [OTel Metrics] v0.1.2 loaded.
+   [OTel Metrics] v0.1.3 loaded.
    [OTel Metrics] Exporting to http://127.0.0.1:4318/v1/metrics every 15 s.
    ```
 
@@ -176,7 +178,7 @@ These work only from the server console and RCON.
 | `otel_metrics_dump` | Writes the last payload to `data/otel_metrics/last_payload.json`, to see exactly what is sent. |
 
 ```
-[OTel Metrics] v0.1.2, running
+[OTel Metrics] v0.1.3, running
   endpoint: http://127.0.0.1:4318/v1/metrics, every 15 s
   headers: none
   last export: 2026-10-18 12:00:15 (4 s ago), result ok, HTTP 200
